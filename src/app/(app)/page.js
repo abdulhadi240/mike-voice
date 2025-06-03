@@ -1,6 +1,11 @@
 'use client'
-import { SignedOut, SignInButton } from '@clerk/nextjs'
+import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
 import React, { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import Link from 'next/link';
+import { VoiceCallerModal } from '@/components/VoiceCallerModal';
+const VapiCallPage1 = dynamic(() => import('@/components/VoiceCallerModal'), { ssr: false });
 
 // Custom hook for parallax effect
 const useParallax = (speed = 0.5) => {
@@ -64,6 +69,7 @@ const Page = () => {
   const [successModalOpen, setSuccessModalOpen] = useState(false)
   const [currentUserId, setCurrentUserId] = useState(null)
   const [currentUserEmail, setCurrentUserEmail] = useState(null)
+  const [isOpen, setIsOpen] = useState(false)
   
   const leftColumnRef = useRef(null)
   const rightColumnRef = useRef(null)
@@ -77,7 +83,7 @@ const Page = () => {
   }, [])
 
   return (
-    <div className="min-h-screen relative overflow-hidden pb-[58px]">
+    <div className="relative overflow-hidden">
       {/* Background image */}
       <div
         style={{
@@ -247,6 +253,7 @@ const Page = () => {
             </div>
           </div>
         </div>
+        
 
         {/* Right Side - 40% */}
         <div className="w-2/5 flex items-center justify-center lg:px-4 xl:px-6 2xl:px-10">
@@ -302,13 +309,21 @@ const Page = () => {
               </div>
             </div>
             
-            {/* Sign In Button */}
-            <SignedOut >
-            <button className="w-full text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform cursor-pointer hover:shadow-lg mb-6">
-              <SignInButton mode='modal' children >SIGN IN TO UNLOCK YOUR VOICE</SignInButton>
-            </button>
-            </SignedOut>
-            
+      <div className="flex items-center justify-center p-8">
+      <SignedOut>
+        <button className="text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform cursor-pointer hover:shadow-lg mb-6">
+          <SignInButton mode="modal">SIGN IN TO UNLOCK YOUR VOICE</SignInButton>
+        </button>
+      </SignedOut>
+
+      <SignedIn>
+        <button onClick={() => setIsOpen(true)}
+          className="text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-10 rounded-full transition-transform transform hover:scale-105 shadow-lg"
+        >
+          🚀 START NOW
+        </button>
+      </SignedIn>
+    </div>
             
             <p className="text-center text-white text-sm italic mb-4">
               Complete in under 5 minutes.
@@ -321,6 +336,11 @@ const Page = () => {
             </div>
           </div>
         </div>
+        {isOpen && (
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-md bg-black/50 ">
+    <VoiceCallerModal open={isOpen} onOpenChange={setIsOpen} />
+  </div>
+)}
       </div>
 
       <style jsx>{`
