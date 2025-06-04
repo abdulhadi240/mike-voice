@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Phone, PhoneOff, Mic, MicOff, X } from "lucide-react"
+import { Phone, PhoneOff, Mic, MicOff, X, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useUser } from "@clerk/nextjs"
 import Vapi from '@vapi-ai/web';
@@ -12,17 +12,18 @@ export function VoiceCallerModal({ open, onOpenChange }) {
   const [status, setStatus] = useState("idle")
   const [isMuted, setIsMuted] = useState(false)
   const [callDuration, setCallDuration] = useState(0)
+  const [errorMessage, setErrorMessage] = useState("")
 
   const vapiRef = useRef(null);
   const callIdRef = useRef(null);
-  const userRef = useRef(null); // 🔥 New user ref to avoid stale closure
+  const userRef = useRef(null);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [conversation, setConversation] = useState([]);
 
   const { user, isLoaded } = useUser();
 
-  // 🧠 Keep userRef updated when user is loaded
+  // Keep userRef updated when user is loaded
   useEffect(() => {
     if (isLoaded && user) {
       userRef.current = user;
@@ -37,81 +38,137 @@ export function VoiceCallerModal({ open, onOpenChange }) {
 
   console.log(VAPI_PUBLIC_KEY,VAPI_ASSISTANT_ID,VAPI_API_KEY);
   
+  // Helper function to handle errors
+  const handleError = (error, context = "") => {
+    console.error(`Error in ${context}:`, error);
+    setStatus("error");
+    setErrorMessage(error.message || "An unexpected error occurred");
+    setIsSessionActive(false);
+    
+    // Auto-reset to idle after 5 seconds
+    setTimeout(() => {
+      setStatus("idle");
+      setErrorMessage("");
+      setCallDuration(0);
+    }, 5000);
+  };
 
   // Vapi listeners
   useEffect(() => {
-    const vapiInstance = new Vapi(VAPI_PUBLIC_KEY);
-    vapiRef.current = vapiInstance;
-
-    vapiInstance.on('call-start', () => {
-      setIsSessionActive(true);
-    });
-
-    vapiInstance.on('call-end', async () => {
-      setIsSessionActive(false);
-      await fetchTranscriptAndSend();
-      setConversation([]);
-      callIdRef.current = null;
-    });
-
-    vapiInstance.on('volume-level', (volume) => {
-      setVolumeLevel(volume);
-    });
-
-    vapiInstance.on('message', (message) => {
-      if (message.type === 'transcript' && message.transcriptType === 'final') {
-        setConversation((prev) => [...prev, { role: message.role, text: message.transcript }]);
+    try {
+      if (!VAPI_PUBLIC_KEY) {
+        throw new Error("VAPI_PUBLIC_KEY is not configured");
       }
-    });
 
-    vapiInstance.on('error', (e) => {
-      console.error('Vapi error:', e);
-    });
+      const vapiInstance = new Vapi(VAPI_PUBLIC_KEY);
+      vapiRef.current = vapiInstance;
 
-    return () => {
-      vapiInstance.stop();
-    };
+      vapiInstance.on('call-start', () => {
+        setIsSessionActive(true);
+        setStatus("active");
+        setIsMuted(false); // Reset mute state when call starts
+      });
+
+      vapiInstance.on('call-end', async () => {
+        setIsSessionActive(false);
+        setStatus("ended");
+        setIsMuted(false); // Reset mute state when call ends
+        
+        try {
+          await fetchTranscriptAndSend();
+        } catch (error) {
+          handleError(error, "fetchTranscriptAndSend");
+        }
+        
+        setConversation([]);
+        callIdRef.current = null;
+        
+        // Auto-reset to idle after call ends
+        setTimeout(() => {
+          if (status !== "error") {
+            setStatus("idle");
+            setCallDuration(0);
+          }
+        }, 3000);
+      });
+
+      vapiInstance.on('volume-level', (volume) => {
+        setVolumeLevel(volume);
+      });
+
+      vapiInstance.on('message', (message) => {
+        if (message.type === 'transcript' && message.transcriptType === 'final') {
+          setConversation((prev) => [...prev, { role: message.role, text: message.transcript }]);
+        }
+      });
+
+      vapiInstance.on('error', (error) => {
+        handleError(error, "Vapi");
+      });
+
+      return () => {
+        try {
+          vapiInstance.stop();
+        } catch (error) {
+          console.error('Error stopping Vapi instance:', error);
+        }
+      };
+    } catch (error) {
+      handleError(error, "Vapi initialization");
+    }
   }, []);
 
   const startConversation = async () => {
-    if (vapiRef.current) {
-      try {
-        setStatus("connecting")
-        setTimeout(() => {
-        setCallDuration(0)
-          }, 1500)
-        const call = await vapiRef.current.start(VAPI_ASSISTANT_ID);
-        if (call?.id) {
-          callIdRef.current = call.id;
-        }
-        setStatus("active")
-        
-      } catch (error) {
-        console.error('Failed to start conversation:', error);
+    if (!vapiRef.current) {
+      handleError(new Error("Vapi instance not initialized"), "startConversation");
+      return;
+    }
+
+    if (!VAPI_ASSISTANT_ID) {
+      handleError(new Error("VAPI_ASSISTANT_ID is not configured"), "startConversation");
+      return;
+    }
+
+    try {
+      setStatus("connecting");
+      setErrorMessage("");
+      
+      setTimeout(() => {
+        setCallDuration(0);
+      }, 1500);
+
+      const call = await vapiRef.current.start(VAPI_ASSISTANT_ID);
+      
+      if (call?.id) {
+        callIdRef.current = call.id;
+      } else {
+        throw new Error("Failed to get call ID");
       }
+      
+      // Status will be set to "active" by the 'call-start' event
+    } catch (error) {
+      handleError(error, "startConversation");
     }
   };
 
   const stopConversation = async () => {
-    if (vapiRef.current) {
-      try {
-        await vapiRef.current.stop();
-        setStatus("ended")
-        setTimeout(() => {
-          setStatus("idle")
-          setCallDuration(0)
-        }, 3000)
-      } catch (error) {
-        console.error('Failed to stop conversation:', error);
-      }
+    if (!vapiRef.current) {
+      handleError(new Error("Vapi instance not available"), "stopConversation");
+      return;
+    }
+
+    try {
+      await vapiRef.current.stop();
+      // Status will be handled by the 'call-end' event
+    } catch (error) {
+      handleError(error, "stopConversation");
     }
   };
 
   const fetchTranscriptAndSend = async () => {
     const callId = callIdRef.current;
     if (!callId) {
-      console.error('❌ Call ID is not available.');
-      return;
+      throw new Error('Call ID is not available');
     }
 
     console.log('⏳ Waiting 30 seconds before first transcript check...');
@@ -128,6 +185,10 @@ export function VoiceCallerModal({ open, onOpenChange }) {
       return;
     }
 
+    if (!VAPI_API_KEY) {
+      throw new Error("VAPI_API_KEY is not configured");
+    }
+
     try {
       const response = await fetch(`https://api.vapi.ai/call/${callId}`, {
         method: 'GET',
@@ -138,8 +199,7 @@ export function VoiceCallerModal({ open, onOpenChange }) {
       });
 
       if (!response.ok) {
-        console.error('❌ Failed to fetch call details:', response.statusText);
-        return;
+        throw new Error(`Failed to fetch call details: ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -184,12 +244,14 @@ export function VoiceCallerModal({ open, onOpenChange }) {
       });
 
       if (!webhookResponse.ok) {
-        console.error('❌ Failed to send transcript to webhook:', webhookResponse.statusText);
+        throw new Error(`Failed to send transcript to webhook: ${webhookResponse.statusText}`);
       } else {
         console.log('✅ Transcript sent successfully.');
       }
     } catch (error) {
       console.error('❌ Error during transcript fetch/send:', error);
+      // Don't set error status here as it might interfere with call flow
+      // Just log the error for debugging
     }
   };
 
@@ -200,30 +262,33 @@ export function VoiceCallerModal({ open, onOpenChange }) {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  // Handle call start (design only)
-  const startCall = () => {
-    setStatus("connecting")
-    setTimeout(() => {
-      setStatus("active")
-      setCallDuration(0)
-    }, 1500)
+  // Toggle mute - actually mute/unmute the Vapi call
+  const toggleMute = async () => {
+    if (!vapiRef.current || !isSessionActive) {
+      console.warn('Cannot toggle mute: Vapi instance not available or call not active');
+      return;
+    }
+
+    try {
+      if (isMuted) {
+        // Unmute
+        await vapiRef.current.setMuted(false);
+        setIsMuted(false);
+        console.log('🔊 Microphone unmuted');
+      } else {
+        // Mute
+        await vapiRef.current.setMuted(true);
+        setIsMuted(true);
+        console.log('🔇 Microphone muted');
+      }
+    } catch (error) {
+      console.error('Error toggling mute:', error);
+      // Don't change the mute state if the operation failed
+      handleError(error, 'toggleMute');
+    }
   }
 
-  // Handle call end (design only)
-  const endCall = () => {
-    setStatus("ended")
-    setTimeout(() => {
-      setStatus("idle")
-      setCallDuration(0)
-    }, 3000)
-  }
-
-  // Toggle mute (design only)
-  const toggleMute = () => {
-    setIsMuted(!isMuted)
-  }
-
-  // Update call duration timer (design only)
+  // Update call duration timer
   useEffect(() => {
     let interval = null
     if (status === "active") {
@@ -253,7 +318,6 @@ export function VoiceCallerModal({ open, onOpenChange }) {
 
     if (open) {
       document.addEventListener('keydown', handleEscape)
-      // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden'
     }
 
@@ -262,6 +326,16 @@ export function VoiceCallerModal({ open, onOpenChange }) {
       document.body.style.overflow = 'unset'
     }
   }, [open, onOpenChange])
+
+  // Reset error when modal closes
+  useEffect(() => {
+    if (!open) {
+      setStatus("idle");
+      setErrorMessage("");
+      setCallDuration(0);
+      setIsMuted(false); // Reset mute state when modal closes
+    }
+  }, [open]);
 
   if (!open) return null
 
@@ -290,6 +364,7 @@ export function VoiceCallerModal({ open, onOpenChange }) {
                   status === "connecting" && "animate-pulse bg-yellow-400 shadow-[0_0_10px_2px_rgba(250,204,21,0.7)]",
                   status === "active" && "bg-green-400 shadow-[0_0_10px_2px_rgba(74,222,128,0.7)]",
                   status === "ended" && "bg-red-400 shadow-[0_0_10px_2px_rgba(248,113,113,0.7)]",
+                  status === "error" && "bg-red-500 shadow-[0_0_10px_2px_rgba(239,68,68,0.7)]",
                 )}
               />
               <span className="text-sm font-medium text-white">
@@ -297,9 +372,20 @@ export function VoiceCallerModal({ open, onOpenChange }) {
                 {status === "connecting" && "Connecting..."}
                 {status === "active" && `In Call • ${formatTime(callDuration)}`}
                 {status === "ended" && "Call Ended"}
+                {status === "error" && "Error"}
               </span>
             </div>
           </div>
+
+          {/* Error message */}
+          {status === "error" && errorMessage && (
+            <div className="mb-4 w-full rounded-lg bg-red-900/20 border border-red-500/30 p-3">
+              <div className="flex items-center gap-2 text-red-300">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm">{errorMessage}</span>
+              </div>
+            </div>
+          )}
 
           {/* Avatar */}
           <div className="mb-6 flex flex-col items-center">
@@ -307,6 +393,7 @@ export function VoiceCallerModal({ open, onOpenChange }) {
               className={cn(
                 "mb-4 rounded-full p-1",
                 status === "active" && "animate-pulse bg-gradient-to-r from-violet-500 to-fuchsia-500",
+                status === "error" && "bg-gradient-to-r from-red-500 to-rose-500",
               )}
             >
               <Avatar className="h-24 w-24 border-4 border-black bg-gradient-to-br from-indigo-600 to-purple-700">
@@ -320,40 +407,46 @@ export function VoiceCallerModal({ open, onOpenChange }) {
 
           {/* Call controls */}
           <div className="mt-4 flex w-full justify-center gap-6">
-            {status === "idle" && (
+            {(status === "idle" || status === "error") && (
               <Button
-              onClick={startConversation}
-              disabled={isSessionActive}
-              className="h-16 w-16 flex items-center justify-center rounded-full bg-gradient-to-r from-green-500 to-emerald-600 p-0 shadow-lg shadow-emerald-700/30 transition-all hover:scale-105 hover:shadow-emerald-700/50"
-            >
-              <div className="flex justify-center">
-              <Phone className="h-10 w-10" />
-              </div>
-            </Button>
+                onClick={startConversation}
+                disabled={isSessionActive}
+                className="h-16 w-16 flex items-center justify-center rounded-full bg-gradient-to-r from-green-500 to-emerald-600 p-0 shadow-lg shadow-emerald-700/30 transition-all hover:scale-105 hover:shadow-emerald-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="flex justify-center">
+                  <Phone className="h-10 w-10" />
+                </div>
+              </Button>
             )}
 
             {(status === "connecting" || status === "active") && (
               <>
                 <Button
                   onClick={toggleMute}
+                  disabled={!isSessionActive}
                   variant="outline"
                   className={cn(
                     "h-16 w-16 rounded-full border-0 p-0 shadow-lg backdrop-blur-sm transition-all",
                     isMuted
                       ? "bg-red-800/70 text-red-300 hover:bg-red-700/70"
                       : "bg-gray-800/70 text-white hover:bg-gray-700/70",
+                    !isSessionActive && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  {isMuted ? <div className="flex justify-center"><MicOff className="h-10 w-10" /></div> : <div className="flex justify-center"><Mic className="h-10 w-10" /></div>}
+                  {isMuted ? (
+                    <div className="flex justify-center"><MicOff className="h-10 w-10" /></div>
+                  ) : (
+                    <div className="flex justify-center"><Mic className="h-10 w-10" /></div>
+                  )}
                   <span className="sr-only">{isMuted ? "Unmute" : "Mute"}</span>
                 </Button>
                 <Button
                   onClick={stopConversation}
                   disabled={!isSessionActive}
-                  className="h-16 w-16 rounded-full bg-gradient-to-r from-red-500 to-rose-600 p-0 shadow-lg shadow-rose-700/30 transition-all hover:scale-105 hover:shadow-rose-700/50"
+                  className="h-16 w-16 rounded-full bg-gradient-to-r from-red-500 to-rose-600 p-0 shadow-lg shadow-rose-700/30 transition-all hover:scale-105 hover:shadow-rose-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <div className="flex justify-center">
-                  <Phone className="h-10 w-10" />
+                    <PhoneOff className="h-10 w-10" />
                   </div>
                 </Button>
               </>
@@ -365,8 +458,8 @@ export function VoiceCallerModal({ open, onOpenChange }) {
                 className="h-16 w-16 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 p-0 shadow-lg shadow-indigo-700/30 transition-all hover:scale-105 hover:shadow-indigo-700/50"
               >
                 <div className="flex justify-center">
-                <Phone className="h-7 w-7" />
-                <span className="sr-only">New Call</span>
+                  <Phone className="h-7 w-7" />
+                  <span className="sr-only">New Call</span>
                 </div>
               </Button>
             )}
