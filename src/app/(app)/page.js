@@ -213,14 +213,14 @@ const Page = () => {
               <SignedIn>
                 <button
                   onClick={() => setIsOpen(true)}
-                  className="text-md sm:text-lg -mt-3 animate-pulse transition-all cursor-pointer bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-8 sm:px-10 rounded-full transform hover:scale-105 shadow-lg"
+                  className="text-md sm:text-lg -mt-3 animate-pulse transition-all cursor-pointer bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-1 px-8 sm:px-10 rounded-full transform hover:scale-105 shadow-lg"
                 >
                   🚀 START NOW
                 </button>
               </SignedIn>
             </div>
 
-            <p className="text-center text-white text-sm italic mb-4 -mt-4">
+            <p className="text-center text-white text-xs italic mb-4 ">
               Complete in under 5 minutes.
             </p>
 
