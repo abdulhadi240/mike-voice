@@ -201,9 +201,9 @@ const Page = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-center p-2">
+            <div className="flex items-center justify-center py-2">
               <SignedOut>
-                <button className="text-md sm:text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 sm:py-4 px-3 rounded-xl transition-all duration-300 transform cursor-pointer hover:shadow-lg mb-6">
+                <button className="text-md sm:text-md px-3 md:px-10 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 sm:py-4  rounded-xl transition-all duration-300 transform cursor-pointer hover:shadow-lg mb-6">
                   <SignInButton mode="modal">
                     SIGN IN TO UNLOCK YOUR VOICE
                   </SignInButton>
@@ -220,7 +220,7 @@ const Page = () => {
               </SignedIn>
             </div>
 
-            <p className="text-center text-white text-sm italic mb-4">
+            <p className="text-center text-white text-sm italic mb-4 -mt-4">
               Complete in under 5 minutes.
             </p>
 
@@ -284,7 +284,7 @@ const Page = () => {
                 ].map((benefit, index) => (
                   <li
                     key={index}
-                    className={`flex items-start space-x-4 text-gray-200 transition-all duration-500 hover:translate-x-2 ${
+                    className={`flex items-start space-x-4 text-gray-200 transition-all  hover:scale-105${
                       isVisible["benefits"]
                         ? "opacity-100 translate-x-0"
                         : "opacity-0 -translate-x-10"
