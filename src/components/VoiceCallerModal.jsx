@@ -31,9 +31,12 @@ export function VoiceCallerModal({ open, onOpenChange }) {
   }, [isLoaded, user]);
 
   // Vapi config
-  const VAPI_PUBLIC_KEY = process.env.VAPI_PUBLIC_KEY
-  const VAPI_ASSISTANT_ID = process.env.VAPI_ASSISTANT_ID
-  const VAPI_API_KEY = process.env.VAPI_API_KEY
+  const VAPI_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY;
+  const VAPI_ASSISTANT_ID = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
+  const VAPI_API_KEY = process.env.NEXT_PUBLIC_VAPI_API_KEY;
+
+  console.log(VAPI_PUBLIC_KEY,VAPI_ASSISTANT_ID,VAPI_API_KEY);
+  
 
   // Vapi listeners
   useEffect(() => {
