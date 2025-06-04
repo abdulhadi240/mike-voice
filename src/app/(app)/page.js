@@ -1,86 +1,99 @@
-'use client'
-import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
-import React, { useEffect, useRef, useState } from 'react'
-import dynamic from 'next/dynamic';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import Link from 'next/link';
-import { VoiceCallerModal } from '@/components/VoiceCallerModal';
-const VapiCallPage1 = dynamic(() => import('@/components/VoiceCallerModal'), { ssr: false });
+"use client";
+import { SignedIn, SignedOut, SignInButton, useClerk } from "@clerk/nextjs";
+import React, { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import Link from "next/link";
+import { VoiceCallerModal } from "@/components/VoiceCallerModal";
+
+const VapiCallPage1 = dynamic(() => import("@/components/VoiceCallerModal"), {
+  ssr: false,
+});
 
 // Custom hook for parallax effect
 const useParallax = (speed = 0.5) => {
-  const [offset, setOffset] = useState(0)
-  const [isReducedMotion, setIsReducedMotion] = useState(false)
-  const rafRef = useRef(null)
-  const lastScrollY = useRef(0)
+  const [offset, setOffset] = useState(0);
+  const [isReducedMotion, setIsReducedMotion] = useState(false);
+  const rafRef = useRef(null);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
     // Check for reduced motion preference
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setIsReducedMotion(mediaQuery.matches)
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setIsReducedMotion(mediaQuery.matches);
 
-    const handleChange = (e) => setIsReducedMotion(e.matches)
-    mediaQuery.addEventListener('change', handleChange)
+    const handleChange = (e) => setIsReducedMotion(e.matches);
+    mediaQuery.addEventListener("change", handleChange);
 
-    return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [])
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
   useEffect(() => {
-    if (isReducedMotion) return
+    if (isReducedMotion) return;
 
     const handleScroll = () => {
-      if (rafRef.current) return
+      if (rafRef.current) return;
 
       rafRef.current = requestAnimationFrame(() => {
-        const scrollY = window.scrollY
-        const delta = scrollY - lastScrollY.current
-        
+        const scrollY = window.scrollY;
+        const delta = scrollY - lastScrollY.current;
+
         // Only update if there's a significant change
         if (Math.abs(delta) > 0.5) {
-          setOffset(scrollY * speed)
-          lastScrollY.current = scrollY
+          setOffset(scrollY * speed);
+          lastScrollY.current = scrollY;
         }
-        
-        rafRef.current = null
-      })
-    }
+
+        rafRef.current = null;
+      });
+    };
 
     // Add passive listener for better performance
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
     // Initial position
-    handleScroll()
+    handleScroll();
 
     return () => {
-      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener("scroll", handleScroll);
       if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
+        cancelAnimationFrame(rafRef.current);
       }
-    }
-  }, [speed, isReducedMotion])
+    };
+  }, [speed, isReducedMotion]);
 
-  return isReducedMotion ? 0 : offset
-}
+  return isReducedMotion ? 0 : offset;
+};
 
 const Page = () => {
-  const [isVisible, setIsVisible] = useState({})
-  const [showOtherOptions, setShowOtherOptions] = useState(false)
-  const [conversationModalOpen, setConversationModalOpen] = useState(false)
-  const [successModalOpen, setSuccessModalOpen] = useState(false)
-  const [currentUserId, setCurrentUserId] = useState(null)
-  const [currentUserEmail, setCurrentUserEmail] = useState(null)
-  const [isOpen, setIsOpen] = useState(false)
-  
-  const leftColumnRef = useRef(null)
-  const rightColumnRef = useRef(null)
-  const benefitsRef = useRef(null)
-  const signupRef = useRef(null)
+  const [isVisible, setIsVisible] = useState({});
+  const [showOtherOptions, setShowOtherOptions] = useState(false);
+  const [conversationModalOpen, setConversationModalOpen] = useState(false);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const { user } = useClerk();
 
-  const parallaxOffset = useParallax(0.5)
+  const leftColumnRef = useRef(null);
+  const rightColumnRef = useRef(null);
+  const benefitsRef = useRef(null);
+  const signupRef = useRef(null);
+
+  const parallaxOffset = useParallax(0.5);
 
   useEffect(() => {
-    setIsVisible({ benefits: true })
-  }, [])
+    setIsVisible({ benefits: true });
+    if (user) {
+      setIsOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      setIsOpen(true);
+    }
+  }, [user]);
 
   return (
     <div className="relative overflow-hidden">
@@ -88,15 +101,15 @@ const Page = () => {
       <div
         style={{
           transform: `translateY(${parallaxOffset}px)`,
-          willChange: 'transform',
+          willChange: "transform",
           backgroundImage: `url('https://res.cloudinary.com/dfkn6xcg4/image/upload/v1748955951/ai-neural-profile_vtzufz.png')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-          backgroundRepeat: 'no-repeat',
-          height: '100vh',
-          width: '100%',
-          position: 'fixed',
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+          backgroundRepeat: "no-repeat",
+          height: "100vh",
+          width: "100%",
+          position: "fixed",
           top: 0,
           left: 0,
           zIndex: -2,
@@ -106,86 +119,227 @@ const Page = () => {
       {/* Overlay */}
       <div
         style={{
-          position: 'fixed',
+          position: "fixed",
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100vh',
-          backgroundColor: 'rgba(0, 0, 0, 0.3)',
+          width: "100%",
+          height: "100vh",
+          backgroundColor: "rgba(0, 0, 0, 0.3)",
           zIndex: -1,
-          pointerEvents: 'none',
+          pointerEvents: "none",
         }}
       />
 
       {/* Foreground content */}
-      <div className="relative z-10 flex min-h-screen px-4">
-        {/* Left Side - 60% */}
-        <div className="w-3/5 flex flex-col justify-center py-12 px-14">
+      <div className="relative z-10 flex flex-col lg:flex-row min-h-screen px-0 lg:px-8 xl:px-12">
+        {/* Right Side - Signup Section (Appears first on mobile) */}
+        <div className="order-1 lg:order-2 w-full lg:w-2/5 flex items-center justify-center py-8 lg:py-12 px-4 lg:px-6">
+          <div
+            className="signup-section signup-section-right"
+            style={{
+              maxWidth: "520px",
+              width: "100%",
+              boxSizing: "border-box",
+            }}
+          >
+            {/* FREE emphasis banner */}
+            <div className="bg-[#0A1F1A] text-[#22c55e] text-center py-3 border-[#22c55e] px-2 md:px-6 rounded-lg mb-6 font-bold text-xs md:text-sm uppercase tracking-wide animate-pulse">
+              Your Personal Voice Analysis - 100% Free! It'll Change How You Use
+              AI Forever.
+            </div>
+
+            <h3 className="text-white text-center text-xl sm:text-2xl px-2 font-bold mb-6 leading-tight">
+              Create a Custom Voice Profile That Makes Every AI Tool Write
+              Exactly Like You!
+            </h3>
+
+            {/* Value proposition */}
+            <div className="backdrop-blur-sm rounded-2xl p-6 mb-8 border border-white/20 hover:shadow-[0_0_35px_rgba(255,255,255,0.12),0_0_70px_rgba(0,255,200,0.08)] transition-all duration-300">
+              <p className="text-center text-white font-bold text-sm md:text-lg mb-4 uppercase tracking-wide">
+                Experience the future of AI:
+              </p>
+              <div className="space-y-4 -mx-4 lg:mx-0">
+                {/* Section 1: Talk naturally */}
+                <div className="text-white">
+                  <p className="font-semibold mb-1 text-sm">
+                    🗣️ Just talk naturally - no forms or quizzes
+                  </p>
+                  <p className="text-gray-300 text-sm ml-6">
+                    Share your thoughts while AI listens and learns
+                  </p>
+                </div>
+
+                {/* Section 2: AI magic */}
+                <div className="text-white">
+                  <p className="font-semibold mb-1 text-sm">
+                    🤖 Watch AI work its magic
+                  </p>
+                  <p className="text-gray-300 text-sm ml-6">
+                    Real-time analysis of your communication style
+                  </p>
+                </div>
+
+                {/* Section 3: Instant blueprint */}
+                <div className="text-white">
+                  <p className="font-semibold mb-2 text-sm">
+                    📧 Your blueprint arrives instantly
+                  </p>
+                  <ul className="text-gray-300 text-sm ml-6 space-y-1">
+                    <li>→ Use in ChatGPT, Claude, Perplexity</li>
+                    <li>→ Create emails, posts, and content</li>
+                    <li>→ Everything sounds authentically YOU</li>
+                  </ul>
+                </div>
+
+                {/* Section 4: Free offer */}
+                <div className="text-white">
+                  <p className="font-semibold text-[12px] md:text-[12px]">
+                    🎁 Free conversation available NOW{" "}
+                    <span className="text-yellow-400">(usually $97)</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center p-2">
+              <SignedOut>
+                <button className="text-md sm:text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 sm:py-4 px-3 rounded-xl transition-all duration-300 transform cursor-pointer hover:shadow-lg mb-6">
+                  <SignInButton mode="modal">
+                    SIGN IN TO UNLOCK YOUR VOICE
+                  </SignInButton>
+                </button>
+              </SignedOut>
+
+              <SignedIn>
+                <button
+                  onClick={() => setIsOpen(true)}
+                  className="text-md sm:text-lg -mt-3 animate-pulse transition-all cursor-pointer bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-8 sm:px-10 rounded-full transform hover:scale-105 shadow-lg"
+                >
+                  🚀 START NOW
+                </button>
+              </SignedIn>
+            </div>
+
+            <p className="text-center text-white text-sm italic mb-4">
+              Complete in under 5 minutes.
+            </p>
+
+            {/* Dynamic social proof */}
+            <div className="text-center bg-[#211915] border-[1px] border-[#E08337] rounded-2xl px-3 py-2 mb-6">
+              <div className="text-[#E08337] font-bold text-sm md:text-base">
+                🔥 2,847 voice profiles created this week
+              </div>
+              <div className="text-[#E08337]">100% FREE!!!</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Left Side - Content Section (Appears below on mobile) */}
+        <div className="order-2 lg:order-1 w-full lg:w-3/5 flex flex-col justify-center py-8 lg:py-12 px-4 lg:px-8 lg:uppercase">
           <div className="max-w-4xl mx-auto text-white space-y-8">
             {/* Hero Section */}
-            <div className="text-center mb-12">
+            <div className="text-center mb-8 lg:mb-12">
               <h1
-                className="font-bold mb-6 text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl leading-tight text-glow-white-animated uppercase"
-                style={{ fontFamily: "'Luxomona', sans-serif", lineHeight: '1.15' }}
+                className="font-bold mb-6 text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl leading-tight"
+                style={{
+                  fontFamily: "'Luxomona', sans-serif",
+                  lineHeight: "1.15",
+                }}
               >
                 <span className="block">Get Your Voice Blueprint</span>
                 <span className="block">in Less Than 5 Minutes</span>
               </h1>
-              <p className="text-lg text-start sm:text-xl lg:text-2xl text-blue-400 leading-relaxed text-glow-blue">
-                Ditch the robotic replies. Our conversational AI voice agent turns ChatGPT, Claude, and any other LLM into your own personal writing assistant, sounding exactly like you.
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-blue-400 leading-relaxed text-glow-blue text-center lg:text-start">
+                Ditch the robotic replies. Our conversational AI voice agent
+                turns ChatGPT, Claude, and any other LLM into your own personal
+                writing assistant, sounding exactly like you.
               </p>
             </div>
 
             {/* Benefits list */}
-            <div className=" backdrop-blur-sm rounded-2xl  ">
-              <ul 
-                ref={benefitsRef}
-                id="benefits"
-                className="space-y-6 w-full"
-              >
+            <div className="backdrop-blur-sm rounded-2xl">
+              <ul ref={benefitsRef} id="benefits" className="space-y-6 w-full">
                 {[
-                  <><strong>You'll get a detailed, personalized Voice Profile</strong> → A breakdown of your tone, phrasing, rhythm, values, and personality - ready to plug into any AI system.</>,
-                  <><strong>We'll show you how to train your own GPT or LLM</strong> → So your custom AI assistant can respond, write, and create content like <i>you</i> - across emails, DMs, and more.</>,
-                  <><strong>Create authentic, on-brand social posts at scale</strong> → No more second-guessing captions. You'll have a content engine that sounds like you and works on autopilot.</>
+                  <>
+                    <strong>
+                      You'll get a detailed, personalized Voice Profile
+                    </strong>{" "}
+                    → A breakdown of your tone, phrasing, rhythm, values, and
+                    personality - ready to plug into any AI system.
+                  </>,
+                  <>
+                    <strong>
+                      We'll show you how to train your own GPT or LLM
+                    </strong>{" "}
+                    → So your custom AI assistant can respond, write, and create
+                    content like <i>you</i> - across emails, DMs, and more.
+                  </>,
+                  <>
+                    <strong>
+                      Create authentic, on-brand social posts at scale
+                    </strong>{" "}
+                    → No more second-guessing captions. You'll have a content
+                    engine that sounds like you and works on autopilot.
+                  </>,
                 ].map((benefit, index) => (
-                  <li 
-                    key={index} 
+                  <li
+                    key={index}
                     className={`flex items-start space-x-4 text-gray-200 transition-all duration-500 hover:translate-x-2 ${
-                      isVisible['benefits'] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
+                      isVisible["benefits"]
+                        ? "opacity-100 translate-x-0"
+                        : "opacity-0 -translate-x-10"
                     }`}
-                    style={{ transitionDelay: isVisible['benefits'] ? `${index * 100}ms` : '0ms' }}
+                    style={{
+                      transitionDelay: isVisible["benefits"]
+                        ? `${index * 100}ms`
+                        : "0ms",
+                    }}
                   >
-                    <svg className="w-6 h-6 text-green-400 flex-shrink-0 mt-1 transition-transform duration-300 hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-6 h-6 text-green-400 flex-shrink-0 mt-1 transition-transform duration-300 hover:scale-110"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
-                    <span className="text-base lg:text-lg leading-relaxed">{benefit}</span>
+                    <span className="text-sm sm:text-base lg:text-lg leading-relaxed">
+                      {benefit}
+                    </span>
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* Chat-style Testimonials Section */}
-            <div 
-              className="backdrop-blur-sm rounded-2xl p-8 border border-white/10"
+            <div
+              className="backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-white/10"
               style={{
-                boxShadow: '0 0 20px rgba(255, 255, 255, 0.1), 0 0 40px rgba(0, 255, 200, 0.08), 0 0 80px rgba(0, 255, 200, 0.04)'
+                boxShadow:
+                  "0 0 20px rgba(255, 255, 255, 0.1), 0 0 40px rgba(0, 255, 200, 0.08), 0 0 80px rgba(0, 255, 200, 0.04)",
               }}
             >
-              <h3 
-                className="text-center text-xl text-gray-300 mb-8 font-bold uppercase tracking-wider"
+              <h3
+                className="text-center text-lg sm:text-xl text-gray-300 mb-6 sm:mb-8 font-bold uppercase tracking-wider"
                 style={{
-                  background: 'linear-gradient(45deg, #ffffff, #00ff88, #00ffcc, #ffffff)',
-                  backgroundSize: '200% 200%',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  animation: 'gradient-shift 3s ease infinite',
-                  filter: 'drop-shadow(0 0 10px rgba(0, 255, 136, 0.13))'
+                  background:
+                    "linear-gradient(45deg, #ffffff, #00ff88, #00ffcc, #ffffff)",
+                  backgroundSize: "200% 200%",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  animation: "gradient-shift 3s ease infinite",
+                  filter: "drop-shadow(0 0 10px rgba(0, 255, 136, 0.13))",
                 }}
               >
                 Real conversations from real users
               </h3>
-              
+
               <div className="space-y-6">
                 {/* Testimonial 1 */}
                 <div className="flex items-start space-x-4 animate-fadeInUp">
@@ -193,17 +347,26 @@ const Page = () => {
                     ER
                   </div>
                   <div className="flex-1 bg-white/10 rounded-2xl p-4 hover:shadow-[0_0_20px_rgba(0,255,200,0.2)] transition-all duration-300">
-                    <div className="text-gray-200 leading-relaxed mb-3">
-                      "The AI conversation felt so natural! It asked thoughtful questions and really understood my writing style."
+                    <div className="text-gray-200 text-sm sm:text-base leading-relaxed mb-3">
+                      "The AI conversation felt so natural! It asked thoughtful
+                      questions and really understood my writing style."
                     </div>
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
                       <span className="text-gray-300 flex items-center">
                         Emma Rodriguez
-                        <svg className="w-4 h-4 ml-2 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        <svg
+                          className="w-4 h-4 ml-2 text-blue-400"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                       </span>
-                      <span className="text-gray-300">2 hours ago</span>
+                      <span className="text-gray-300 text-xs">2 hours ago</span>
                     </div>
                   </div>
                 </div>
@@ -214,17 +377,26 @@ const Page = () => {
                     MC
                   </div>
                   <div className="flex-1 bg-white/10 rounded-2xl p-4 hover:shadow-[0_0_20px_rgba(0,255,200,0.2)] transition-all duration-300">
-                    <div className="text-gray-200 leading-relaxed mb-3">
-                      "I was skeptical, but after 5 minutes chatting with the AI, I had a blueprint that actually sounds like me!"
+                    <div className="text-gray-200 text-sm sm:text-base leading-relaxed mb-3">
+                      "I was skeptical, but after 5 minutes chatting with the
+                      AI, I had a blueprint that actually sounds like me!"
                     </div>
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
                       <span className="text-gray-300 flex items-center">
                         Marcus Chen
-                        <svg className="w-4 h-4 ml-2 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        <svg
+                          className="w-4 h-4 ml-2 text-blue-400"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                       </span>
-                      <span className="text-gray-300">5 hours ago</span>
+                      <span className="text-gray-300 text-xs">5 hours ago</span>
                     </div>
                   </div>
                 </div>
@@ -235,17 +407,26 @@ const Page = () => {
                     LP
                   </div>
                   <div className="flex-1 bg-white/10 rounded-2xl p-4 hover:shadow-[0_0_20px_rgba(0,255,200,0.2)] transition-all duration-300">
-                    <div className="text-gray-200 leading-relaxed mb-3">
-                      "This is exactly what I needed! My ChatGPT responses went from robotic to authentic overnight 🎯"
+                    <div className="text-gray-200 text-sm sm:text-base leading-relaxed mb-3">
+                      "This is exactly what I needed! My ChatGPT responses went
+                      from robotic to authentic overnight 🎯"
                     </div>
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
                       <span className="text-gray-300 flex items-center">
                         Lisa Park
-                        <svg className="w-4 h-4 ml-2 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        <svg
+                          className="w-4 h-4 ml-2 text-blue-400"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                       </span>
-                      <span className="text-gray-300">Yesterday</span>
+                      <span className="text-gray-300 text-xs">Yesterday</span>
                     </div>
                   </div>
                 </div>
@@ -253,102 +434,25 @@ const Page = () => {
             </div>
           </div>
         </div>
-        
 
-        {/* Right Side - 40% */}
-        <div className="w-2/5 flex items-center justify-center lg:px-4 xl:px-6 2xl:px-10">
-          <div 
-            className="signup-section signup-section-right"
-            style={{ maxWidth: '520px', width: '100%', boxSizing: 'border-box' }}
-          >
-            {/* FREE emphasis banner */}
-            <div className="bg-[#0A1F1A] text-[#22c55e] text-center py-3  border-[#22c55e]  px-6 rounded-lg mb-6 font-bold text-sm uppercase tracking-wide animate-pulse">
-              Your Personal Voice Analysis - 100% Free! It'll Change How You Use AI Forever.
-            </div>
-
-            <h3 className="text-white text-center text-2xl px-2 font-bold mb-6 leading-tight">
-              Create a Custom Voice Profile That Makes Every AI Tool Write Exactly Like You!
-            </h3>
-            
-            {/* Value proposition */}
-            <div 
-              className=" backdrop-blur-sm rounded-2xl p-6 mb-8 border border-white/20 hover:shadow-[0_0_35px_rgba(255,255,255,0.12),0_0_70px_rgba(0,255,200,0.08)] transition-all duration-300"
-            >
-              <p className="text-center text-white font-bold text-lg mb-4 uppercase tracking-wide">
-                Experience the future of AI:
-              </p>
-              <div className="space-y-4">
-                {/* Section 1: Talk naturally */}
-                <div className="text-white">
-                  <p className="font-semibold mb-1">🗣️ Just talk naturally - no forms or quizzes</p>
-                  <p className="text-gray-300 text-sm ml-6">Share your thoughts while AI listens and learns</p>
-                </div>
-                
-                {/* Section 2: AI magic */}
-                <div className="text-white">
-                  <p className="font-semibold mb-1">🤖 Watch AI work its magic</p>
-                  <p className="text-gray-300 text-sm ml-6">Real-time analysis of your communication style</p>
-                </div>
-                
-                {/* Section 3: Instant blueprint */}
-                <div className="text-white">
-                  <p className="font-semibold mb-2">📧 Your blueprint arrives instantly</p>
-                  <ul className="text-gray-300 text-sm ml-6 space-y-1">
-                    <li>→ Use in ChatGPT, Claude, Perplexity</li>
-                    <li>→ Create emails, posts, and content</li>
-                    <li>→ Everything sounds authentically YOU</li>
-                  </ul>
-                </div>
-                
-                {/* Section 4: Free offer */}
-                <div className="text-white">
-                  <p className="font-semibold text-[13px]">
-                    🎁 Free conversation available NOW <span className="text-yellow-400">(usually $97)</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-      <div className="flex items-center justify-center p-8">
-      <SignedOut>
-        <button className="text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform cursor-pointer hover:shadow-lg mb-6">
-          <SignInButton mode="modal">SIGN IN TO UNLOCK YOUR VOICE</SignInButton>
-        </button>
-      </SignedOut>
-
-      <SignedIn>
-        <button onClick={() => setIsOpen(true)}
-          className="text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-10 rounded-full transition-transform transform hover:scale-105 shadow-lg"
-        >
-          🚀 START NOW
-        </button>
-      </SignedIn>
-    </div>
-            
-            <p className="text-center text-white text-sm italic mb-4">
-              Complete in under 5 minutes.
-            </p>
-            
-            {/* Dynamic social proof */}
-            <div className="text-center  bg-[#211915] border-[1px] border-[#E08337] rounded-2xl px-4 py-2 mb-6">
-              <div className="text-[#E08337] font-bold">🔥 2,847 voice profiles created this week</div>
-              <div className="text-[#E08337] ">100% FREE!!!</div>
-            </div>
-          </div>
-        </div>
         {isOpen && (
-  <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-md bg-black/50 ">
-    <VoiceCallerModal open={isOpen} onOpenChange={setIsOpen} />
-  </div>
-)}
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-md bg-black/50">
+            <VoiceCallerModal open={isOpen} onOpenChange={setIsOpen} />
+          </div>
+        )}
       </div>
 
       <style jsx>{`
         @keyframes gradient-shift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
+          0%,
+          100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
         }
-        
+
         @keyframes fadeInUp {
           from {
             opacity: 0;
@@ -359,21 +463,23 @@ const Page = () => {
             transform: translateY(0);
           }
         }
-        
+
         .animate-fadeInUp {
           animation: fadeInUp 0.6s ease-out forwards;
         }
-        
+
         .text-glow-white-animated {
-          text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.5), 0 0 30px rgba(255, 255, 255, 0.3);
+          text-shadow: 0 0 10px rgba(255, 255, 255, 0.8),
+            0 0 20px rgba(255, 255, 255, 0.5), 0 0 30px rgba(255, 255, 255, 0.3);
         }
-        
+
         .text-glow-blue {
-          text-shadow: 0 0 10px rgba(59, 130, 246, 0.6), 0 0 20px rgba(59, 130, 246, 0.3);
+          text-shadow: 0 0 10px rgba(59, 130, 246, 0.6),
+            0 0 20px rgba(59, 130, 246, 0.3);
         }
       `}</style>
     </div>
-  )
-}
+  );
+};
 
-export default Page
+export default Page;

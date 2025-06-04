@@ -1,14 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Phone, PhoneOff, Mic, MicOff } from "lucide-react"
+import { Phone, PhoneOff, Mic, MicOff, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useUser } from "@clerk/nextjs"
 import Vapi from '@vapi-ai/web';
-
 
 export function VoiceCallerModal({ open, onOpenChange }) {
   const [status, setStatus] = useState("idle")
@@ -33,9 +31,9 @@ export function VoiceCallerModal({ open, onOpenChange }) {
   }, [isLoaded, user]);
 
   // Vapi config
-  const VAPI_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY
-  const VAPI_ASSISTANT_ID = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID
-  const VAPI_API_KEY = process.env.NEXT_PUBLIC_VAPI_API_KEY
+  const VAPI_PUBLIC_KEY = process.env.VAPI_PUBLIC_KEY
+  const VAPI_ASSISTANT_ID = process.env.VAPI_ASSISTANT_ID
+  const VAPI_API_KEY = process.env.VAPI_API_KEY
 
   // Vapi listeners
   useEffect(() => {
@@ -235,9 +233,49 @@ export function VoiceCallerModal({ open, onOpenChange }) {
     }
   }, [status])
 
+  // Handle backdrop click to close modal
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onOpenChange(false)
+    }
+  }
+
+  // Handle escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && open) {
+        onOpenChange(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener('keydown', handleEscape)
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden'
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'unset'
+    }
+  }, [open, onOpenChange])
+
+  if (!open) return null
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fixed -mt-44 left-1/2 top-1/2 max-w-lg -translate-x-1/2 -translate-y-1/2 border-0 bg-[#1a3a3f] p-0 shadow-2xl">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={handleBackdropClick}
+    >
+      <div className="relative mx-4 w-full max-w-lg rounded-lg bg-[#1a3a3f] p-0 shadow-2xl">
+        {/* Close button */}
+        <button
+          onClick={() => onOpenChange(false)}
+          className="absolute right-4 top-4 z-10 rounded-full bg-black/20 p-2 text-white/70 transition-colors hover:bg-black/30 hover:text-white"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
         <div className="relative flex flex-col items-center rounded-lg p-6">
           {/* Status indicator with neon effect */}
           <div className="mb-6 w-full">
@@ -270,11 +308,11 @@ export function VoiceCallerModal({ open, onOpenChange }) {
             >
               <Avatar className="h-24 w-24 border-4 border-black bg-gradient-to-br from-indigo-600 to-purple-700">
                 <AvatarImage src="/placeholder.svg?height=96&width=96" />
-                <AvatarFallback className="text-3xl font-bold text-white bg-black">Riley</AvatarFallback>
+                <AvatarFallback className="text-3xl font-bold text-white bg-black">E</AvatarFallback>
               </Avatar>
             </div>
-            <h3 className="text-xl font-bold text-white">Wellness Partners</h3>
-            {status === "active" && <p className="text-sm text-gray-300">Wellness Partners</p>}
+            <h3 className="text-xl font-bold text-white">Echo</h3>
+            {status === "active" && <p className="text-sm text-gray-300">Echo</p>}
           </div>
 
           {/* Call controls */}
@@ -338,7 +376,7 @@ export function VoiceCallerModal({ open, onOpenChange }) {
             <div className="absolute -bottom-20 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-3xl"></div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   )
 }
