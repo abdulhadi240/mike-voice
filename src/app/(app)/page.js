@@ -10,60 +10,7 @@ const VapiCallPage1 = dynamic(() => import("@/components/VoiceCallerModal"), {
   ssr: false,
 });
 
-// Custom hook for parallax effect
-const useParallax = (speed = 0.5) => {
-  const [offset, setOffset] = useState(0);
-  const [isReducedMotion, setIsReducedMotion] = useState(false);
-  const rafRef = useRef(null);
-  const lastScrollY = useRef(0);
-
-  useEffect(() => {
-    // Check for reduced motion preference
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setIsReducedMotion(mediaQuery.matches);
-
-    const handleChange = (e) => setIsReducedMotion(e.matches);
-    mediaQuery.addEventListener("change", handleChange);
-
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  useEffect(() => {
-    if (isReducedMotion) return;
-
-    const handleScroll = () => {
-      if (rafRef.current) return;
-
-      rafRef.current = requestAnimationFrame(() => {
-        const scrollY = window.scrollY;
-        const delta = scrollY - lastScrollY.current;
-
-        // Only update if there's a significant change
-        if (Math.abs(delta) > 0.5) {
-          setOffset(scrollY * speed);
-          lastScrollY.current = scrollY;
-        }
-
-        rafRef.current = null;
-      });
-    };
-
-    // Add passive listener for better performance
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    // Initial position
-    handleScroll();
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
-    };
-  }, [speed, isReducedMotion]);
-
-  return isReducedMotion ? 0 : offset;
-};
+// Removed parallax hook - using fixed background instead
 
 const Page = () => {
   const [isVisible, setIsVisible] = useState({});
@@ -80,7 +27,7 @@ const Page = () => {
   const benefitsRef = useRef(null);
   const signupRef = useRef(null);
 
-  const parallaxOffset = useParallax(0.5);
+  // Removed parallax offset - using fixed background
 
   useEffect(() => {
     setIsVisible({ benefits: true });
@@ -96,34 +43,24 @@ const Page = () => {
   }, [user]);
 
   return (
-    <div className="relative overflow-hidden">
-      {/* Background image */}
+    <div className="relative overflow-hidden min-h-screen">
+      {/* Fixed background image */}
       <div
+        className="fixed inset-0 w-full h-full"
         style={{
-          transform: `translateY(${parallaxOffset}px)`,
-          willChange: "transform",
           backgroundImage: `url('https://res.cloudinary.com/dfkn6xcg4/image/upload/v1748955951/ai-neural-profile_vtzufz.png')`,
           backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundAttachment: "fixed",
+          backgroundPosition: "center center",
           backgroundRepeat: "no-repeat",
-          height: "100%",
-          width: "100%",
-          position: "fixed",
-          top: 0,
-          left: 0,
+          backgroundAttachment: "fixed",
           zIndex: -2,
         }}
       />
 
       {/* Overlay */}
       <div
+        className="fixed inset-0 w-full h-full"
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
           backgroundColor: "rgba(0, 0, 0, 0.3)",
           zIndex: -1,
           pointerEvents: "none",
@@ -131,7 +68,7 @@ const Page = () => {
       />
 
       {/* Foreground content */}
-      <div className="relative z-10 flex flex-col lg:flex-row min-h-screen px-0 lg:px-8 xl:px-12">
+      <div className="relative z-10 flex flex-col lg:flex-row min-h-screen px-0 lg:px-8 xl:px-12 pb-20">{/* Added bottom padding */}
         {/* Right Side - Signup Section (Appears first on mobile) */}
         <div className="order-1 lg:order-2 w-full lg:w-2/5 flex items-center justify-center py-8 lg:py-12 px-4 lg:px-6">
           <div
