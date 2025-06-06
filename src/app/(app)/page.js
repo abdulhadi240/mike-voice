@@ -68,7 +68,7 @@ const Page = () => {
       />
 
       {/* Foreground content */}
-      <div className="relative z-10 flex flex-col lg:flex-row min-h-screen px-0 lg:px-8 xl:px-12 pb-20">{/* Added bottom padding */}
+      <div className="relative z-10 flex flex-col lg:flex-row min-h-screen px-0 lg:px-8 ">{/* Added bottom padding */}
         {/* Right Side - Signup Section (Appears first on mobile) */}
         <div className="order-1 lg:order-2 w-full lg:w-2/5 flex items-center justify-center py-8 lg:py-12 px-4 lg:px-6">
           <div
@@ -172,21 +172,17 @@ const Page = () => {
         </div>
 
         {/* Left Side - Content Section (Appears below on mobile) */}
-        <div className="order-2 lg:order-1 w-full lg:w-3/5 flex flex-col justify-center py-8 lg:py-12 px-4 lg:px-8 lg:uppercase">
+        <div className="order-2 lg:order-1 w-full lg:w-3/5 flex flex-col justify-center py-8 lg:py-12 px-4 lg:px-8">
           <div className="max-w-4xl mx-auto text-white space-y-8">
             {/* Hero Section */}
             <div className="text-center mb-8 lg:mb-12">
               <h1
-                className="font-bold mb-6 text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl leading-tight"
-                style={{
-                  fontFamily: "'Luxomona', sans-serif",
-                  lineHeight: "1.15",
-                }}
+                className="font-bold my-class mb-6 text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl leading-tight  lg:uppercase"
               >
                 <span className="block">Get Your Voice Blueprint</span>
                 <span className="block">in Less Than 5 Minutes</span>
               </h1>
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-blue-400 leading-relaxed text-glow-blue text-center lg:text-start">
+              <p className="subheadline text-base sm:text-lg md:text-xl lg:text-2xl text-blue-400 leading-relaxed text-glow-blue text-center lg:text-start">
                 Ditch the robotic replies. Our conversational AI voice agent
                 turns ChatGPT, Claude, and any other LLM into your own personal
                 writing assistant, sounding exactly like you.
