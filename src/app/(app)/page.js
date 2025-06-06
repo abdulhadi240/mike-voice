@@ -10,8 +10,6 @@ const VapiCallPage1 = dynamic(() => import("@/components/VoiceCallerModal"), {
   ssr: false,
 });
 
-// Removed parallax hook - using fixed background instead
-
 const Page = () => {
   const [isVisible, setIsVisible] = useState({});
   const [showOtherOptions, setShowOtherOptions] = useState(false);
@@ -20,6 +18,7 @@ const Page = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
   const { user } = useClerk();
 
   const leftColumnRef = useRef(null);
@@ -27,7 +26,27 @@ const Page = () => {
   const benefitsRef = useRef(null);
   const signupRef = useRef(null);
 
-  // Removed parallax offset - using fixed background
+  // Parallax scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    // Throttle scroll event for better performance
+    let ticking = false;
+    const throttledScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener("scroll", throttledScroll);
+    return () => window.removeEventListener("scroll", throttledScroll);
+  }, []);
 
   useEffect(() => {
     setIsVisible({ benefits: true });
@@ -44,22 +63,23 @@ const Page = () => {
 
   return (
     <div className="relative overflow-hidden min-h-screen">
-      {/* Fixed background image */}
+      {/* Parallax background image */}
       <div
-        className="fixed inset-0 w-full h-full"
+        className="fixed inset-0 w-full h-[140%]"
         style={{
           backgroundImage: `url('https://res.cloudinary.com/dfkn6xcg4/image/upload/v1748955951/ai-neural-profile_vtzufz.png')`,
           backgroundSize: "cover",
           backgroundPosition: "center center",
           backgroundRepeat: "no-repeat",
-          backgroundAttachment: "fixed",
+          transform: `translateY(${scrollY * -0.1}px)`,
+          willChange: "transform",
           zIndex: -2,
         }}
       />
 
       {/* Overlay */}
       <div
-        className="fixed inset-0 w-full h-full"
+        className="fixed inset-0 w-full h-screen"
         style={{
           backgroundColor: "rgba(0, 0, 0, 0.3)",
           zIndex: -1,
@@ -68,7 +88,7 @@ const Page = () => {
       />
 
       {/* Foreground content */}
-      <div className="relative z-10 flex flex-col lg:flex-row min-h-screen px-0 lg:px-8 ">{/* Added bottom padding */}
+      <div className="relative z-10 flex flex-col lg:flex-row min-h-screen px-0 lg:px-8">
         {/* Right Side - Signup Section (Appears first on mobile) */}
         <div className="order-1 lg:order-2 w-full lg:w-2/5 flex items-center justify-center py-8 lg:py-12 px-4 lg:px-6">
           <div
