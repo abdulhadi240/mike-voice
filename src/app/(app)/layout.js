@@ -4,6 +4,13 @@ import {
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
 import "../globals.css"
+import { Exo_2 } from 'next/font/google'
+
+const exo2 = Exo_2({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-exo2',
+})
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -26,7 +33,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <body className={`${exo2.variable} ${exo2.variable} antialiased`}>
           <Header />
           {children}
         </body>
